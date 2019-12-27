@@ -1,11 +1,16 @@
 <?php
-require_once __DIR__ . '/vendor/autoload.php';
+$config = [
+    "hosts" => [
+        ["addr" => "aerospike", "port" => 3000]
+    ]
+];
 
-use Tarantool\Client\Client;
+$db = new Aerospike($config);
 
-$client = Client::fromOptions([
-    'uri' => 'tarantool:3301'
-]);
+if (!$db->isConnected()) {
+    echo "Failed to connect to the Aerospike server [{$db->errorno()}]: {$db->error()}\n";
+    exit(1);
+}
 
 $count = 0;
 echo 'Processing...' . PHP_EOL;
@@ -13,9 +18,17 @@ echo 'Processing...' . PHP_EOL;
 $time_start = microtime(true);
 
 for ($i=1 ; $i < 100000; $i ++) {
-    $select = "SELECT * FROM snapshot_verification_result  WHERE rule_id = ? AND trigger_id = ? AND answer_set_id = ? AND answer_source_type_id = ?";
-    $result = $client->executeQuery($select, mt_rand(1, 50), mt_rand(1, 50), mt_rand(1, 50), mt_rand(1, 50));
-    $result = $result->getData();
+    $key = $db->initKey("test", "snapshot_results", md5(mt_rand(1, 50) . ' ' .  mt_rand(1, 50) . ' ' . mt_rand(1, 50) . ' ' . mt_rand(1, 50)));
+
+    $status = $db->get($key, $record);
+    if ($status == Aerospike::OK) {
+        //ok
+    } elseif ($status == Aerospike::ERR_RECORD_NOT_FOUND) {
+        //echo "A user with key ". $key['key']. " does not exist in the database\n";
+    } else {
+        echo "[{$db->errorno()}] ".$db->error() . PHP_EOL;
+    }
+
     $count++;
 }
 
