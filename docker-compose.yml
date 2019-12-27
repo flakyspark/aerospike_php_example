@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  php:
+    # у нас свой образ для PHP, указываем путь к нему и говорим что его надо собрать
+    build: ./images/php
+    # Подключим локальную папку app как каталог /app в контейнере
+    volumes:
+      - ./app:/app
+    # Опции нужы для того, чтобы контейнер не завершился сразу после запуска
+    # То есть мы сможем подключиться к нему и работать в его консоле
+    stdin_open: true
+    tty: true
+  aerospike:
+    image: aerospike/aerospike-server:latest
+    stdin_open: true
+    tty: true
